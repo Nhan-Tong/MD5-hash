@@ -32,7 +32,7 @@ module MyMD5(clk, en1,en2,en3,en4, reset, data_i, data_o);
 	
 	reg ready_out, ready_out_new;
 	reg ready_in, ready_in_new;
-	reg storedatadone;
+	reg storedatadone,getdata,storedatadone_new,getdata_new;
 	
 	reg [5:0] stage, stage_new;
 	reg [5:0] round, round_new;
@@ -45,20 +45,23 @@ module MyMD5(clk, en1,en2,en3,en4, reset, data_i, data_o);
 	//------------------------------------------
 always @(clk,en1,en2,en3,en4)
 begin
+
 	if(en1) begin
 		storage_new[511:384] = data_i;
 		end
-	if(en1) begin
+	if(en2) begin
 		storage_new[383:256] = data_i;
 		end
-	if(en1) begin
+	if(en3) begin
 		storage_new[255:128] = data_i;
 		end
-	if(en1) begin
+	if(en4) begin
 		storage_new[127:0]   = data_i;
-		storedatadone = 1;
+		storedatadone_new = 1;
+		getdata_new = 0;
 		end
-end
+	end
+
 	//------------------------------------------
 	// UPDATE SIGNAL
 	//------------------------------------------
@@ -83,6 +86,7 @@ if(reset) begin
 	round = round_new;	
 	data_o = data_o_new;
 	ready_out = ready_out_new;
+	storedatadone = storedatadone_new;
 	A = A_new;
 	B = B_new;
 	C = C_new;
@@ -99,7 +103,7 @@ end
 	
 always @(A,B,C,D,round,stage,ready_out)
 begin
-
+if(storedatadone) begin
 		ready_out_new = 0;
 		if(ready_out) begin
 			temp_out[127:96] = A + A0;
@@ -133,6 +137,7 @@ begin
 				default: round_new = round + 1;
 			endcase
 	end	
+end
 end	
 
 	//------------------------------------------
@@ -140,7 +145,6 @@ end
 	//------------------------------------------	
 	always @(round)
 	begin
-		
 		case(round)                 // _____Ki: abs(sin(i+ 1))×232_____.___Si__.block.
 				0:  k = 44'hD76AA478070; // 11010111011010101010010001111000.00000111.0000 =.07.0
 				1:  k = 44'hE8C7B7560C1; // 11101000110001111011011101010110.00001100.0001 =.12.1
@@ -223,7 +227,7 @@ end
 	
 always @(A,B,C,D,round,M[0],M[2],M[3],M[4],M[5],M[6],M[7],M[8],M[9],M[10],
 M[11],M[12],M[13],M[14],M[15],storage)
-
+if(storedatadone) begin
 	begin
 		
 		M[0]<=storage[511:480]; 
@@ -256,8 +260,8 @@ M[11],M[12],M[13],M[14],M[15],storage)
 		B_new = func_out;
 		C_new = B;
 		D_new = C;
-		
 	end
+end
 
 	//------------------------------------------
 	// F-Functions
@@ -283,6 +287,7 @@ M[11],M[12],M[13],M[14],M[15],storage)
 		begin
 			shift = (data_in << Si)|(data_in>>(Si));
 		end
+		
 	endfunction	
 	
 	//------------------------------------------
