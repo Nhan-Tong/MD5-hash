@@ -31,8 +31,7 @@ module MyMD5(clk, en1,en2,en3,en4, reset, data_i, data_o);
 	reg [31:0] D, D_new;
 	
 	reg ready_out, ready_out_new;
-	reg ready_in, ready_in_new;
-	reg storedatadone,getdata,storedatadone_new,getdata_new;
+	reg storedatadone,storedatadone_new;
 	
 	reg [5:0] stage, stage_new;
 	reg [5:0] round, round_new;
@@ -43,7 +42,7 @@ module MyMD5(clk, en1,en2,en3,en4, reset, data_i, data_o);
 	//------------------------------------------
 	// STORE DATA
 	//------------------------------------------
-always @(clk,en1,en2,en3,en4)
+always @(en1,en2,en3,en4)
 begin
 
 	if(en1) begin
@@ -58,7 +57,6 @@ begin
 	if(en4) begin
 		storage_new[127:0]   = data_i;
 		storedatadone_new = 1;
-		getdata_new = 0;
 		end
 	end
 
@@ -67,6 +65,7 @@ begin
 	//------------------------------------------
 always @(posedge clk)
 begin
+
 if(reset) begin
 	A = 32'h67452301; 
 	B = 32'hefcdab89;
@@ -81,17 +80,21 @@ if(reset) begin
 	end
 	
 	else begin // UPDATE DATA
-	storage = storage_new;
-	stage = stage_new;
-	round = round_new;	
-	data_o = data_o_new;
-	ready_out = ready_out_new;
-	storedatadone = storedatadone_new;
-	A = A_new;
-	B = B_new;
-	C = C_new;
-	D = D_new;
+	if(storedatadone) begin
+		
+		stage = stage_new;
+		round = round_new;	
+		data_o = data_o_new;
+		ready_out = ready_out_new;
+		
+		A = A_new;
+		B = B_new;
+		C = C_new;
+		D = D_new;
+		end
 	end
+	storedatadone = storedatadone_new;
+	storage = storage_new;
 end
 //
 
@@ -101,7 +104,7 @@ end
 
 	reg [127:0] temp_out;
 	
-always @(A,B,C,D,round,stage,ready_out)
+always @(A,B,C,D,round,stage,ready_out,storedatadone)
 begin
 if(storedatadone) begin
 		ready_out_new = 0;
@@ -111,7 +114,6 @@ if(storedatadone) begin
 			temp_out[63:32]  = C + C0;
 			temp_out[31:0]   = D + D0;
 			data_o_new = temp_out;
-			
 		end
 		else begin
 			
@@ -221,31 +223,29 @@ end
 		// generate var
 	reg [31:0] func_tmp, func_out;
 	reg [31:0] ki,f;
-	reg [3:0]  g;
 	reg [3:0]  Mi;
 	reg [7:0]  Si;
 	
-always @(A,B,C,D,round,M[0],M[2],M[3],M[4],M[5],M[6],M[7],M[8],M[9],M[10],
-M[11],M[12],M[13],M[14],M[15],storage)
+always @(storedatadone,storage,A,B,C,D,round)
 if(storedatadone) begin
 	begin
 		
-		M[0]<=storage[511:480]; 
-		M[1]<=storage[479:448]; 
-		M[2]<=storage[447:416]; 
-		M[3]<=storage[415:384]; 
-		M[4]<=storage[383:352]; 
-		M[5]<=storage[351:320]; 
-		M[6]<=storage[319:288]; 
-		M[7]<=storage[287:256]; 
-		M[8]<=storage[255:224]; 
-		M[9]<=storage[223:192]; 
-		M[10]<=storage[191:160]; 
-		M[11]<=storage[159:128]; 
-		M[12]<=storage[127:96]; 
-		M[13]<=storage[95:64]; 
-		M[14]<=storage[63:32]; 
-		M[15]<=storage[31:0];
+		M[0]=storage[511:480]; 
+		M[1]=storage[479:448]; 
+		M[2]=storage[447:416]; 
+		M[3]=storage[415:384]; 
+		M[4]=storage[383:352]; 
+		M[5]=storage[351:320]; 
+		M[6]=storage[319:288]; 
+		M[7]=storage[287:256]; 
+		M[8]=storage[255:224]; 
+		M[9]=storage[223:192]; 
+		M[10]=storage[191:160]; 
+		M[11]=storage[159:128]; 
+		M[12]=storage[127:96]; 
+		M[13]=storage[95:64]; 
+		M[14]=storage[63:32]; 
+		M[15]=storage[31:0];
 
 	// Calculate var
 		Mi = k[3:0];
@@ -311,25 +311,25 @@ MyMD5 m1(clk,en1,en2,en3,en4, reset, data_i, data_o);
 	initial
 	begin
 	clk = 1'b 0;
-	forever #5 clk = ~clk;
+	forever #10 clk = ~clk;
 	end
    initial
    begin
      reset = 'b1;
 	  @(clk);
 	  reset = 'b0;
-	  @(clk);
+	  #3;
 	  en1   = 'b1;
 	  data_i= 128'h0;
-	  @(clk);
+	  #3;
 	  en1   = 'b0;
 	  en2   = 'b1;
 	  data_i= 128'h0;
-	  @(clk);
+	  #3;
 	  en2   = 'b0;
 	  en3   = 'b1;
 	  data_i= 128'h0;
-	  @(clk);
+	  #3;
 	  en3   = 'b0;
 	  en4   = 'b1;
 	  data_i= 128'h1234567898765432123456789;
