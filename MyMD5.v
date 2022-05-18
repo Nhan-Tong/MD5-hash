@@ -14,10 +14,10 @@ module MyMD5(clk, en1,en2,en3,en4, reset, data_i, data_o);
 	//------------------------------------------
 	// Initial Parameters
 	//------------------------------------------
-	parameter A0 = 32'h67452301; 
-	parameter B0 = 32'hefcdab89;
-	parameter C0 = 32'h98badcfe;
-	parameter D0 = 32'h10325476;
+	parameter A0 = 32'h01234567; 
+	parameter B0 = 32'h89abcdef;
+	parameter C0 = 32'hfedcba98;
+	parameter D0 = 32'h76543210;
 
 	
 	//------------------------------------------
@@ -67,10 +67,10 @@ always @(posedge clk)
 begin
 
 if(reset) begin
-	A = 32'h67452301; 
-	B = 32'hefcdab89;
-	C = 32'h98badcfe;
-	D = 32'h10325476;
+	A = 32'h01234567; 
+	B = 32'h89abcdef;
+	C = 32'hfedcba98;
+	D = 32'h76543210;
 	storedatadone = 0;
 	data_o = 0;
 	ready_out = 0;
@@ -221,7 +221,7 @@ end
 	// MAIN FUNCTION
 	//------------------------------------------	
 		// generate var
-	reg [31:0] func_tmp, func_out;
+	reg [31:0] func_tmp, func_out, shiftbit;
 	reg [31:0] ki,f;
 	reg [3:0]  Mi;
 	reg [7:0]  Si;
@@ -254,7 +254,8 @@ if(storedatadone) begin
 		ki = k[43:12];
 		
 		func_tmp = A + f + ki + M[Mi] ;
-		func_out = B + shift(func_tmp,Si); 
+		shiftbit = shift(func_tmp,Si);
+		func_out = B + shiftbit; 
 		
 		A_new = D;
 		B_new = func_out;
@@ -285,7 +286,7 @@ end
 	
 	function [31:0] shift (input [31:0]data_in, input [7:0]Si);
 		begin
-			shift = (data_in << Si)|(data_in>>(Si));
+			shift = (data_in << Si)|(data_in>>(32-Si)); 
 		end
 		
 	endfunction	
@@ -320,11 +321,11 @@ MyMD5 m1(clk,en1,en2,en3,en4, reset, data_i, data_o);
 	  reset = 'b0;
 	  #3;
 	  en1   = 'b1;
-	  data_i= 128'h0;
+	  data_i= 128'h54686579206172652064657465726D69;
 	  #3;
 	  en1   = 'b0;
 	  en2   = 'b1;
-	  data_i= 128'h0;
+	  data_i= 128'h6E697374696380000000000000000000;
 	  #3;
 	  en2   = 'b0;
 	  en3   = 'b1;
@@ -332,7 +333,7 @@ MyMD5 m1(clk,en1,en2,en3,en4, reset, data_i, data_o);
 	  #3;
 	  en3   = 'b0;
 	  en4   = 'b1;
-	  data_i= 128'h1234567898765432123456789;
+	  data_i= 128'h0;
    end
 
 endmodule
